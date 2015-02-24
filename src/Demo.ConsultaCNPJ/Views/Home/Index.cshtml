@@ -1,0 +1,248 @@
+﻿@{
+    ViewBag.Title = "Consulta CNPJ";
+}
+
+<h3>@ViewBag.Title</h3>
+
+<div class="form-horizontal dados">
+
+    <div class="form-group">
+        <label class="control-label col-md-2">CNPJ</label>
+        <div class="col-md-3">
+            <input type="text" id="cnpj-input" value="" class="form-control" autofocus data-mask="00.000.000/0000-00" data-mask-selectonfocus="true" />
+            <button class="btn btn-success" disabled title="Buscar CNPJ" id="buscar-btn"><i class="glyphicon glyphicon-search"></i></button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Razão Social</label>
+        <div class="col-md-8">
+            <input type="text" id="razaosocial-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Nome Fantasia</label>
+        <div class="col-md-8">
+            <input type="text" id="fantasia-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">CNAE</label>
+        <div class="col-md-8">
+            <input type="text" id="cnae-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Endereço</label>
+        <div class="col-md-10">
+            <input type="text" id="endereco-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Bairro</label>
+        <div class="col-md-3">
+            <input type="text" id="bairro-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">CEP</label>
+        <div class="col-md-2">
+            <input type="text" id="cep-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Cidade</label>
+        <div class="col-md-3">
+            <input type="text" id="cidade-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-md-2">Estado</label>
+        <div class="col-md-2">
+            <input type="text" id="estado-input" disabled value="" class="form-control caixa-grande" />
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="buscar-modal" tabindex="-1" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Buscar CNPJ</h4>
+            </div>
+            <div class="modal-body" style="height:250px;">
+                <p>Preencha com o texto da imagem</p>
+                <br />
+                <div class="form-horizontal">
+                    <div class="form-group">
+                        <label class="control-label col-md-2">Texto</label>
+                        <div class="col-md-5">
+                            <input type="text" id="img-input" value="" class="form-control caixa-grande" />
+                        </div>
+                    </div>
+
+                    <div class="form-group img-captcha">
+                        <div class="col-md-offset-2 col-md-6">
+                            <div style="float:left;">
+                                <img id="captcha-img" title="Informe o texto da imagem" class="hidden" />
+                            </div>
+                            <div style="float:right;">
+                                <a href="#" id="buscar-captcha-btn" class="btn btn-warning btn-sm"><i class="glyphicon glyphicon-refresh"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="height:80px;">
+                <p class="bg-danger pull-left hidden msg" style="padding:10px 20px;">
+                    <i class="glyphicon glyphicon-warning-sign"></i>&nbsp;<strong><span id="msgErro-span"></span></strong>
+                </p>
+                <button type="button" id="fechar-button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+                <button type="button" id="buscarDados-btn" class="btn btn-primary">Buscar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section scripts {
+    <script src="~/Scripts/jquery.mask.js"></script>
+    <script>
+        $("#cnpj-input").mask("00.000.000/0000-00", {
+            onComplete: function (texto) {
+                $("#buscar-btn").removeAttr("disabled");
+            },
+            onKeyPress: function (cep, event, currentField, options) {
+                $("#buscar-btn").attr("disabled", "disabled");
+                PreencheDados(null, true)
+            }
+        });
+
+        $("#buscar-btn").on("click", function () {
+            $("#buscar-modal").modal({ show: true });
+        });
+
+        $("#buscar-modal").on("show.bs.modal", function () {
+            BuscarCaptcha();
+        });
+
+        $("#buscar-modal").on("shown.bs.modal", function () {
+            $("#img-input").focus();
+        });
+
+        $("#buscar-modal").on("hidden.bs.modal", function () {
+            $("#img-input").val("");
+        });
+
+        $("#buscar-captcha-btn").on("click", function () {
+            $("#captcha-img").fadeOut(1000, function () {
+                $(this).attr('src', "");
+                BuscarCaptcha();
+            });
+
+        });
+
+        $("#buscarDados-btn").on("click", function () {
+            ObterDados();
+        });
+
+        var pathLoader = "@Url.Content("~/Content/ajax-loader-facebook.gif ")";
+        var $loader = $('<img class="loader-facebook" src="' + pathLoader + '"/> <em>Buscando ...</em>');
+
+        var BuscarCaptcha = function () {
+            var strUrl = '@Url.Action("GetCaptcha")';
+            $.ajax({
+                type: 'GET',
+                url: strUrl,
+                dataType: 'json',
+                cache: false,
+                async: true,
+                beforeSend: function () {
+                    $loader.insertAfter($("#captcha-img"));
+                },
+                success: function (data) {
+                    $("#captcha-img").removeClass("hidden").attr('src', data);
+                    $("#captcha-img").fadeIn(1000);
+                },
+                complete: function () {
+                    $loader.remove();
+                    $("#img-input").focus();
+                },
+                error: function () {
+                    alert("erro na tentativa de obter o captcha");
+                }
+            });
+        };
+
+        var ObterDados = function () {
+            var strUrl = '@Url.Action("ConsultarDados")';
+            $.ajax({
+                type: 'post',
+                url: strUrl,
+                cache: false,
+                async: true,
+                data: { cnpj: $("#cnpj-input").val(), captcha: $("#img-input").val() },
+                beforeSend: function () {
+                    $loader.insertBefore($("#fechar-button"));
+                },
+                success: function (data) {
+                    $loader.remove();
+                    if (data.erro.length > 0) {
+                        $("#msgErro-span").text(data.erro).closest("p").removeClass("hidden");
+                        $("#captcha-img").fadeOut(1000, function () {
+                            $(this).attr('src', "");
+                            BuscarCaptcha();
+                            $("#img-input").focus();
+                        });
+                        setTimeout(function () {
+                            $("#msgErro-span").closest("p").addClass("hidden");
+                        }, 2000);
+                    } else {
+                        if (data.dados != null) {
+                            PreencheDados(data.dados, false);
+                            $("#buscar-modal").modal("hide");
+                        } else {
+                            $("#msgErro-span").text("erro de comunicação com a receita.").closest("p").removeClass("hidden");
+                            $("#captcha-img").fadeOut(1000, function () {
+                                $(this).attr('src', "");
+                                BuscarCaptcha();
+                                $("#img-input").focus();
+                            });
+                            setTimeout(function () {
+                                $("#msgErro-span").closest("p").addClass("hidden");
+                            }, 2000);
+                        }
+
+                    }
+                },
+                error: function (data) {
+                    $loader.remove();
+                    alert("erro de comunicação.");
+                },
+            });
+        };
+
+        var PreencheDados = function (dados, clear) {
+            if (clear) {
+                $(".caixa-grande").val("");
+            } else {
+                $("#razaosocial-input").val(dados.Razaosocial);
+                $("#fantasia-input").val(dados.NomeFantasia);
+                $("#cnae-input").val(dados.Cnae);
+                $("#endereco-input").val(dados.Endereco);
+                $("#bairro-input").val(dados.Bairro);
+                $("#cep-input").val(dados.Cep);
+                $("#cidade-input").val(dados.Cidade);
+                $("#estado-input").val(dados.Estado);
+            }
+        };
+    </script>
+}
